@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from torch.utils.data import Dataset
+import random
 
 from args import get_args
 
@@ -108,6 +109,7 @@ class Dataset_mat(Dataset):
     - if implicit is Ture, the data will be a set
         or else, the data will be a rating matrix, and it is np.ndarry type, and is_mat is True
     """
+
     def __init__(self, data):
         super().__init__()
         self.data = data
@@ -126,15 +128,43 @@ class Dataset_mat(Dataset):
         else:
             return self.data[idx]
 
+
 class Dataset_ml(Dataset):
     """
     prepare data for MF.
     """
+
     def __init__(self, data):
         super().__init__()
         self.data = data
         self.num = data.shape[0]
+
     def __getitem__(self, idx):
         return self.data.iloc[idx].tolist()
+
     def __len__(self):
         return self.num
+
+
+class BPR_Dataset(Dataset):
+    def __init__(self, users, items, candidates, num_items):
+        """
+
+        :param users: user list
+        :param items: item list, for u in the users and i in the items, (u, i) of the same position of user list and item list, is a positive (u,i) interaction
+        :param candidates: a dict {user_id:set(positive items of this user)}
+        :param num_items:
+        """
+        super().__init__()
+        self.users = users
+        self.items = items
+        self.cand = candidates
+        self.all = set([i for i in range(num_items)])
+
+    def __len__(self):
+        return len(self.users)
+
+    def __getitem__(self, item):
+        negative_items = list(self.all - self.cand[self.users[item]])
+        neg_item = random.choice(negative_items)
+        return self.users[item], self.items[item], neg_item
